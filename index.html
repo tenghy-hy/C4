@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>共同科目：節能減碳</title>
     <style>
-        :root { --main: #00b894; --bg: #f0f2f5; --win: #00b894; --lose: #d63031; --accent: #0984e3; }
+        :root { --main: #0984e3; --bg: #f0f2f5; --win: #00b894; --lose: #d63031; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         #game-box { background: white; width: 95%; max-width: 450px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
         #timer-bg { width: 100%; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin: 15px 0; }
-        #timer-fill { width: 100%; height: 100%; background: #fab1a0; transition: width 0.1s linear; }
+        #timer-fill { width: 100%; height: 100%; background: #ff7675; transition: width 0.1s linear; }
         .q-text { font-size: 1.15em; font-weight: bold; margin-bottom: 20px; min-height: 60px; color: #2d3436; text-align: left; line-height: 1.4; }
         .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
         .opt-btn { padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; background: white; cursor: pointer; font-size: 1.05em; text-align: left; outline: none; transition: 0.2s; }
-        .opt-btn:hover:not(:disabled) { border-color: var(--main); background: #f4fffb; }
+        .opt-btn:hover:not(:disabled) { border-color: var(--main); background: #f1f9ff; }
         .correct { background: var(--win) !important; color: white; border-color: var(--win); }
         .wrong { background: var(--lose) !important; color: white; border-color: var(--lose); }
         .hidden { display: none; }
-        .rule-box { background: #e3fcef; border: 1px solid #b2f2bb; padding: 12px; border-radius: 10px; text-align: left; font-size: 0.9em; margin-bottom: 20px; color: #2b8a3e; }
+        .rule-box { background: #fff9db; border: 1px solid #ffe066; padding: 12px; border-radius: 10px; text-align: left; font-size: 0.9em; margin-bottom: 20px; color: #665c33; }
         select#player-no { width: 100%; padding: 10px; font-size: 1.1em; border-radius: 8px; border: 2px solid var(--main); margin-bottom: 20px; outline: none; }
         button#start-btn { padding: 12px 35px; font-size: 1.2em; background: var(--main); color: white; border: none; border-radius: 50px; cursor: pointer; transition: 0.3s; width: 100%; }
         button#start-btn:disabled { background: #ccc; cursor: not-allowed; }
@@ -33,15 +33,15 @@
     <div id="start-screen">
         <h2 style="color: var(--main); margin-bottom: 10px;">共同科目：節能減碳</h2>
         <div class="rule-box">
-            <strong>🌍 測驗說明：</strong><br>
-            1. 隨機抽取 <strong>10 題</strong> 節能減碳相關題目。<br>
-            2. 每題作答時間 <strong>30 秒</strong>。<br>
-            3. 答對分數 = 10 分 + 剩餘時間獎勵。<br>
-            4. 讓我們一起愛護地球！
+            <strong>📝 計分規則說明：</strong><br>
+            1. 每次測驗將隨機抽取 <strong>10 題</strong>。<br>
+            2. 每題作答時間為 <strong>30 秒</strong>。<br>
+            3. 答對分數 = 基礎 10 分 + 剩餘秒數獎勵。<br>
+            4. 答錯或逾時不給分。
         </div>
         <p style="text-align: left; font-weight: bold; margin-bottom: 5px;">選擇座號：</p>
         <select id="player-no"></select>
-        <button id="start-btn" onclick="initGame()" disabled>讀取題庫中...</button>
+        <button id="start-btn" onclick="initGame()" disabled>連線中...</button>
         <div id="debug-log">系統狀態：初始化中...</div>
     </div>
 
@@ -72,9 +72,11 @@
 </div>
 
 <script>
-    // 更新後的連結與 ID
+    // 題庫 CSV 連結
     const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQh7L1F2UHCVhK-_9M6ltExRZRUAnN84TkfZc92I09w-bz7peOrfjobEnWvfdgHRI6UnT9lpxJl89F8/pub?output=csv";
+    // 排行榜 CSV 連結
     const RANK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvFTZz769zfP5cpG9NnibdMXRyLe4_0Qz-8lY60sObKex0UELqAxr4y7ohmUWnB3WbU428zfM2ygs-/pub?output=csv";
+    // Form 回傳連結
     const FORM_BASE_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfqbRfOF9-jpNkT5caysMBm_Q3gYvtV7zffWVGWMNfbt-HghQ";
     const ID_NO = "entry.380705505";      
     const ID_SCORE = "entry.330260248";   
@@ -106,6 +108,7 @@
             const lines = text.split(/\r?\n/);
             const temp = [];
             lines.forEach((line) => {
+                // 處理可能包含逗號的引號字串
                 const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
                 if (cols.length >= 6 && ['1','2','3','4'].includes(cols[1])) {
                     temp.push({ 
@@ -186,7 +189,9 @@
         const pNo = document.getElementById('player-no').value;
         const finalUrl = `${FORM_BASE_URL}/formResponse?${ID_NO}=${pNo}&${ID_SCORE}=${score}&submit=Submit`;
         
-        // 發送成績
+        // 透過圖片請求發送 Form 資料 (解決跨網域提交問題)
+        const img = new Image();
+        img.src = finalUrl;
         fetch(finalUrl, { mode: 'no-cors' }).catch(() => {});
 
         log("成績已送出。");
